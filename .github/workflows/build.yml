@@ -23,30 +23,32 @@ jobs:
       - name: Install Cordova
         run: npm install -g cordova
 
-      - name: Create Cordova Project and Inject HTML
+      - name: Find and Unzip HTML Project
         run: |
           # 1. Tworzymy czysty projekt Cordova
           cordova create MojaApka com.mobywatel.app mObywatel
           
-          # 2. Rozpakowujemy Twoje pliki ze strony
-          unzip fObywatel-main.zip
+          # 2. Szukamy automatycznie jakiegokolwiek pliku .zip w repozytorium
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          echo "Znaleziony plik ZIP: $ZIP_FILE"
           
-          # 3. Czyścimy domyślny folder z plikami i kopiujemy tam Twoje
+          # 3. Rozpakowujemy go
+          unzip "$ZIP_FILE"
+          
+          # 4. Czyścimy domyślny folder Cordova i szukamy gdzie wskoczył index.html
           rm -rf MojaApka/www/*
+          INDEX_PATH=$(find . -name "index.html" -not -path "./MojaApka/*" | head -n 1)
+          HTML_DIR=$(dirname "$INDEX_PATH")
           
-          # Sprawdzamy gdzie wskoczyły pliki i kopiujemy zawartość do folderu www
-          if [ -d "fObywatel-main" ]; then
-            cp -r fObywatel-main/* MojaApka/www/
-          else
-            cp -r * MojaApka/www/ || true
-          fi
+          echo "Kopiowanie plików strony z folderu: $HTML_DIR"
+          cp -r $HTML_DIR/* MojaApka/www/
 
       - name: Add Android Platform and Build
         run: |
           cd MojaApka
           # Dodajemy platformę Android do projektu
           cordova platform add android
-          # Budujemy gotowy plik APK
+          # Budujemy plik APK
           cordova build android --release
 
       - name: Upload APK
@@ -54,3 +56,4 @@ jobs:
         with:
           name: mobywatel-apk
           path: "MojaApka/platforms/android/app/build/outputs/apk/release/*-release-unsigned.apk"
+          
