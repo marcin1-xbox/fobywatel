@@ -1,0 +1,56 @@
+name: Build HTML Project to APK
+on:
+  push:
+    branches: [ main, master ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Create Cordova Project and Inject HTML
+        run: |
+          # 1. Tworzymy czysty projekt Cordova
+          cordova create MojaApka com.mobywatel.app mObywatel
+          
+          # 2. Rozpakowujemy Twoje pliki ze strony
+          unzip fObywatel-main.zip
+          
+          # 3. Czyścimy domyślny folder z plikami i kopiujemy tam Twoje
+          rm -rf MojaApka/www/*
+          
+          # Sprawdzamy gdzie wskoczyły pliki i kopiujemy zawartość do folderu www
+          if [ -d "fObywatel-main" ]; then
+            cp -r fObywatel-main/* MojaApka/www/
+          else
+            cp -r * MojaApka/www/ || true
+          fi
+
+      - name: Add Android Platform and Build
+        run: |
+          cd MojaApka
+          # Dodajemy platformę Android do projektu
+          cordova platform add android
+          # Budujemy gotowy plik APK
+          cordova build android --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobywatel-apk
+          path: "MojaApka/platforms/android/app/build/outputs/apk/release/*-release-unsigned.apk"
