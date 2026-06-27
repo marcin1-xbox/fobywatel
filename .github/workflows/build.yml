@@ -4,7 +4,6 @@ on:
   push:
     branches: [ main, master ]
 
-# Uprawnienia potrzebne do automatycznego stworzenia strony GitHub Pages
 permissions:
   contents: write
   pages: write
@@ -13,8 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 12 # Jeśli proces zajmie więcej niż 12 minut, sam się wyłączy
-    
+    timeout-minutes: 12
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,16 +37,16 @@ jobs:
           rm -rf MojaApka/www/*
           rsync -av --exclude="MojaApka" --exclude=".git" --exclude=".github" ./ MojaApka/www/
 
-      - name: Add Android Platform and Build
+      - name: Add Android Platform and Build (Debug)
         run: |
           cd MojaApka
           cordova platform add android
-          cordova build android --release -- --packageType=apk
+          cordova build android --debug
 
       - name: Prepare Download Page
         run: |
           mkdir public
-          cp MojaApka/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk public/app.apk
+          cp MojaApka/platforms/android/app/build/outputs/apk/debug/app-debug.apk public/app.apk
           echo '<!DOCTYPE html><html><head><title>Pobierz APK</title><meta charset="utf-8"></head><body style="text-align:center; font-family:sans-serif; margin-top:50px;">' > public/index.html
           echo '<h1>Twoja aplikacja jest gotowa!</h1>' >> public/index.html
           echo '<a href="app.apk" style="font-size:24px; color:white; background:green; padding:15px 30px; text-decoration:none; border-radius:5px;">POBIERZ PLIK APK</a>' >> public/index.html
@@ -61,3 +59,4 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
+        
