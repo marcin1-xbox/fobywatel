@@ -4,9 +4,17 @@ on:
   push:
     branches: [ main, master ]
 
+# Uprawnienia potrzebne do automatycznego stworzenia strony GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 12 # Jeśli proces zajmie więcej niż 12 minut, sam się wyłączy
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,9 +45,19 @@ jobs:
           cordova platform add android
           cordova build android --release -- --packageType=apk
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Prepare Download Page
+        run: |
+          mkdir public
+          cp MojaApka/platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk public/app.apk
+          echo '<!DOCTYPE html><html><head><title>Pobierz APK</title><meta charset="utf-8"></head><body style="text-align:center; font-family:sans-serif; margin-top:50px;">' > public/index.html
+          echo '<h1>Twoja aplikacja jest gotowa!</h1>' >> public/index.html
+          echo '<a href="app.apk" style="font-size:24px; color:white; background:green; padding:15px 30px; text-decoration:none; border-radius:5px;">POBIERZ PLIK APK</a>' >> public/index.html
+          echo '</body></html>' >> public/index.html
+
+      - name: Upload and Deploy to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: artifacts
-          path: MojaApka/platforms/android/app/build/outputs/apk/release/app-release.apk
-          
+          path: 'public'
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
