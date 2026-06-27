@@ -23,32 +23,25 @@ jobs:
       - name: Install Cordova
         run: npm install -g cordova
 
-      - name: Find and Unzip HTML Project
+      - name: Create Cordova Project and Copy All Assets
         run: |
           # 1. Tworzymy czysty projekt Cordova
           cordova create MojaApka com.mobywatel.app mObywatel
           
-          # 2. Szukamy automatycznie jakiegokolwiek pliku .zip w repozytorium
-          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
-          echo "Znaleziony plik ZIP: $ZIP_FILE"
-          
-          # 3. Rozpakowujemy go
-          unzip "$ZIP_FILE"
-          
-          # 4. Czyścimy domyślny folder Cordova i szukamy gdzie wskoczył index.html
+          # 2. Czyszczenie domyślnego folderu www
           rm -rf MojaApka/www/*
-          INDEX_PATH=$(find . -name "index.html" -not -path "./MojaApka/*" | head -n 1)
-          HTML_DIR=$(dirname "$INDEX_PATH")
           
-          echo "Kopiowanie plików strony z folderu: $HTML_DIR"
-          cp -r $HTML_DIR/* MojaApka/www/
+          # 3. Kopiowanie wszystkich plików (HTML, CSS, JS, zdjęcia, GIFy)
+          rsync -av --exclude='MojaApka' --exclude='.git' --exclude='.github' ./ MojaApka/www/
+          
+          # 4. Dodatkowe sprawdzenie, czy GIF-y i zdjęcia na pewno się skopiowały
+          echo "Lista skopiowanych plików graficznych w aplikacji:"
+          find MojaApka/www/ -type f \( -name "*.gif" -o -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" \)
 
       - name: Add Android Platform and Build
         run: |
           cd MojaApka
-          # Dodajemy platformę Android do projektu
           cordova platform add android
-          # Budujemy plik APK
           cordova build android --release
 
       - name: Upload APK
